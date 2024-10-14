@@ -33,6 +33,132 @@ Bar Charts: Illustrate total rides by year and user type.
 Line Charts: Show trends in trip duration over time.
 Tables: Summarize average trip durations and ride counts.
 
+-- Count total rows in each year's table
+SELECT COUNT(*) AS total_rows
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`;
+
+SELECT COUNT(*) AS total_rows
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020`;
+
+-- Retrieve distinct records from each year
+SELECT DISTINCT *
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`;
+
+SELECT DISTINCT *
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020`;
+
+-- Calculate max, min, and average trip duration for 2019
+SELECT 
+    MAX(tripduration) AS max_value,
+    MIN(tripduration) AS min_value,
+    AVG(tripduration) AS mean_value
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`;
+
+-- Check column names for 2019 and 2020 tables
+SELECT * FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019` LIMIT 1; -- Check columns for 2019
+SELECT * FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020` LIMIT 1; -- Check columns for 2020
+
+-- Create a combined table for trips from 2019 and 2020
+CREATE OR REPLACE TABLE `aqueous-cabinet-400300.bicycle_trips.all_trips_2019_2020` AS
+SELECT 
+    CAST(trip_id AS STRING) AS trip_id,
+    start_time,
+    end_time,
+    from_station_name AS start_station_name,
+    from_station_id AS start_station_id,
+    to_station_name AS end_station_name,
+    to_station_id AS end_station_id,
+    usertype AS rider_type,
+    NULL AS rideable_type
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+UNION ALL
+SELECT 
+    CAST(ride_id AS STRING) AS trip_id,  -- Replace with actual column name
+    started_at AS start_time,
+    ended_at AS end_time,
+    start_station_name AS from_station_name,
+    start_station_id AS from_station_id,
+    end_station_name AS to_station_name,
+    end_station_id AS to_station_id,
+    rideable_type AS usertype,
+    rideable_type
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020`;
+
+-- Average trip duration by user type for 2019
+SELECT usertype, AVG(tripduration) AS avg_duration
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+GROUP BY usertype;
+
+-- Count rides by day of the week for 2019
+SELECT FORMAT_TIMESTAMP('%A', start_time) AS day_of_week, COUNT(*) AS ride_count
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+GROUP BY day_of_week
+ORDER BY day_of_week;
+
+-- Create a summary report table
+CREATE OR REPLACE TABLE `aqueous-cabinet-400300.bicycle_trips.summary_report` AS
+-- Total rides and average duration for 2019
+SELECT 
+    '2019' AS year,
+    'overall' AS category,
+    COUNT(*) AS ride_count,
+    AVG(tripduration) AS avg_trip_duration,
+    NULL AS user_type,
+    NULL AS day_of_week
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+
+UNION ALL
+
+-- Total rides and average duration for 2020
+SELECT 
+    '2020' AS year,
+    'overall' AS category,
+    COUNT(*) AS ride_count,
+    AVG(TIMESTAMP_DIFF(ended_at, started_at, SECOND)) AS avg_trip_duration,
+    NULL AS user_type,
+    NULL AS day_of_week
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020`
+
+UNION ALL
+
+-- Average trip duration by user type for 2019
+SELECT 
+    '2019' AS year,
+    'by_user_type' AS category,
+    COUNT(*) AS ride_count,
+    AVG(tripduration) AS avg_trip_duration,
+    usertype AS user_type,
+    NULL AS day_of_week
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+GROUP BY user_type
+
+UNION ALL
+
+-- Average trip duration by user type for 2020
+SELECT 
+    '2020' AS year,
+    'by_user_type' AS category,
+    COUNT(*) AS ride_count,
+    AVG(TIMESTAMP_DIFF(ended_at, started_at, SECOND)) AS avg_trip_duration,
+    member_casual AS user_type,
+    NULL AS day_of_week
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2020`
+GROUP BY user_type
+
+UNION ALL
+
+-- Rides by day of the week for 2019
+SELECT 
+    '2019' AS year,
+    'by_day_of_week' AS category,
+    COUNT(*) AS ride_count,
+    NULL AS avg_trip_duration,
+    NULL AS user_type,
+    FORMAT_TIMESTAMP('%A', start_time) AS day_of_week
+FROM `aqueous-cabinet-400300.bicycle_trips.divvy_trips_2019`
+GROUP BY day_of_week
+
+ORDER BY year, category;
 
 
 
